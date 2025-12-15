@@ -1,59 +1,253 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PHP_Laravel12_Restrick_User_From_IPAddress
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel">
+  <img src="https://img.shields.io/badge/Security-IP%20Restriction-success?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Middleware-Custom-blue?style=for-the-badge">
 </p>
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+##  Overview  
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Laravel 12 allows you to secure your application using **Middleware**.  
+In this tutorial, we will **restrict or block users based on their IP address**.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+✔ Block specific IP addresses  
+✔ Return **403 Forbidden** for blocked IPs  
+✔ Laravel 12 compatible (no Kernel.php)  
+✔ Easy to apply on routes or route groups  
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+##  Features  
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+-  Restrict access by IP address  
+-  Uses **Custom Middleware**  
+-  Automatically blocks restricted users  
+-  Clean & maintainable code  
+-  Laravel 12 middleware registration support  
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+##  Folder Structure  
 
-### Premium Partners
+```
+app/
+├── Http/
+│   └── Middleware/
+│       └── BlockIpMiddleware.php
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+routes/
+└── web.php
 
-## Contributing
+bootstrap/
+└── app.php
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+.env
+README.md
+```
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+##  Step 1 — Install Laravel 12  
 
-## Security Vulnerabilities
+Create a fresh Laravel 12 project:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer create-project laravel/laravel laravel
+```
 
-## License
+Move into project directory:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+cd laravel
+```
+
+---
+
+##  Step 2 — Configure Environment File (.env)  
+
+Open `.env` file and update database credentials:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+---
+
+##  Step 3 — Create Block IP Middleware  
+
+Run the artisan command:
+
+```bash
+php artisan make:middleware BlockIpMiddleware
+```
+
+This will create:
+
+```
+app/Http/Middleware/BlockIpMiddleware.php
+```
+
+---
+
+##  Step 4 — Write Block IP Logic  
+
+ **app/Http/Middleware/BlockIpMiddleware.php**
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class BlockIpMiddleware
+{
+    /**
+     * List of blocked IP addresses
+     */
+    public $blockIps = [
+        'whitelist-ip-1',
+        'whitelist-ip-2',
+        '127.0.0.1', // Localhost example
+    ];
+
+    /**
+     * Handle an incoming request.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        // Check if user's IP is in blocked list
+        if (in_array($request->ip(), $this->blockIps)) {
+            abort(403, 'You are restricted to access the site.');
+        }
+
+        return $next($request);
+    }
+}
+```
+
+---
+
+##  Step 5 — Register Middleware in Laravel 12  
+
+⚠ **Laravel 12 does NOT use `Kernel.php`**  
+Middleware is registered inside **`bootstrap/app.php`**
+
+ **bootstrap/app.php**
+
+```php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+
+    ->withMiddleware(function (Middleware $middleware): void {
+
+        // Register custom middleware alias
+        $middleware->alias([
+            'blockIP' => \App\Http\Middleware\BlockIpMiddleware::class,
+        ]);
+
+    })
+
+    ->withExceptions(function (Exceptions $exceptions): void {
+        //
+    })
+
+    ->create();
+```
+
+---
+
+##  Step 6 — Apply Middleware to Routes  
+
+ **routes/web.php**
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\RSSFeedController;
+
+/*
+|--------------------------------------------------------------------------
+| Routes protected by Block IP Middleware
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['blockIP'])->group(function () {
+
+    Route::resource('users', UserController::class);
+    Route::resource('rss', RSSFeedController::class);
+
+});
+```
+
+---
+
+##  Step 7 — Run Laravel Application  
+
+Start the development server:
+
+```bash
+php artisan serve
+```
+
+Application will run at:
+
+```
+http://localhost:8000
+```
+
+---
+
+##  Step 8 — Test IP Restriction  
+
+Visit:
+
+```
+http://localhost:8000/users
+```
+
+###  If your IP is blocked  
+You will see:
+
+```
+403 | You are restricted to access the site.
+```
+<img width="1805" height="970" alt="Screenshot 2025-12-15 103539" src="https://github.com/user-attachments/assets/33f263ac-60cc-4584-9665-194bd08f487d" />
+
+
+
+###  If your IP is allowed  
+The page will load normally.
+
+---
+
+##  Conclusion  
+
+✔ Middleware checks IP before request  
+✔ Blocked IPs receive 403 error  
+✔ Fully compatible with Laravel 12  
+✔ Can be applied to specific routes or entire app  
+
+---
+
