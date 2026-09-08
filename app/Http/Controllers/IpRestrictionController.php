@@ -5,25 +5,162 @@ namespace App\Http\Controllers;
 use App\Models\BlockedIpLog;
 use App\Models\IpRestriction;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class IpRestrictionController extends Controller
 {
     /**
      * Display IP restrictions and blocked logs.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $restrictions = IpRestriction::latest()->get();
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+
+        $search = $request->input('search');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        $status = $request->input('status', 'all');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sorting
+        |--------------------------------------------------------------------------
+        */
+
+        $sort = $request->input('sort', 'latest');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Restrictions Query
+        |--------------------------------------------------------------------------
+        */
+
+        $restrictionQuery = IpRestriction::query();
+
+        if ($search) {
+            $restrictionQuery->where(function ($query) use ($search) {
+                $query->where('ip_address', 'like', "%{$search}%")
+                    ->orWhere('reason', 'like', "%{$search}%");
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($status === 'active') {
+
+            $restrictionQuery
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                });
+        } elseif ($status === 'disabled') {
+
+            $restrictionQuery->where('is_active', false);
+        } elseif ($status === 'expired') {
+
+            $restrictionQuery
+                ->where('is_active', true)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', now());
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sorting
+        |--------------------------------------------------------------------------
+        */
+
+        switch ($sort) {
+
+            case 'oldest':
+                $restrictionQuery->oldest();
+                break;
+
+            case 'ip_asc':
+                $restrictionQuery->orderBy('ip_address', 'asc');
+                break;
+
+            case 'ip_desc':
+                $restrictionQuery->orderBy('ip_address', 'desc');
+                break;
+
+            default:
+                $restrictionQuery->latest();
+                break;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $restrictions = $restrictionQuery
+            ->paginate(5)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logs
+        |--------------------------------------------------------------------------
+        */
 
         $logs = BlockedIpLog::latest('blocked_at')
-            ->paginate(15);
+            ->paginate(5, ['*'], 'logs_page')
+            ->withQueryString();
 
-        return view('ip-restrictions.index', compact(
-            'restrictions',
-            'logs'
-        ));
+        /*
+        |--------------------------------------------------------------------------
+        | Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $totalRestrictions = IpRestriction::count();
+
+        $activeRestrictions = IpRestriction::where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->count();
+
+        $expiredRestrictions = IpRestriction::where('is_active', true)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->count();
+
+        $blockedAttempts = BlockedIpLog::count();
+
+        return view(
+            'ip-restrictions.index',
+            compact(
+                'restrictions',
+                'logs',
+                'search',
+                'status',
+                'sort',
+                'totalRestrictions',
+                'activeRestrictions',
+                'expiredRestrictions',
+                'blockedAttempts'
+            )
+        );
     }
+
 
     /**
      * Store a new IP restriction.
@@ -31,6 +168,7 @@ class IpRestrictionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+
             'ip_address' => [
                 'required',
                 'ip',
@@ -59,8 +197,12 @@ class IpRestrictionController extends Controller
 
         return redirect()
             ->route('ip-restrictions.index')
-            ->with('success', 'IP address has been blocked successfully.');
+            ->with(
+                'success',
+                'IP address has been blocked successfully.'
+            );
     }
+
 
     /**
      * Remove an IP restriction.
@@ -71,8 +213,12 @@ class IpRestrictionController extends Controller
 
         return redirect()
             ->route('ip-restrictions.index')
-            ->with('success', 'IP restriction removed successfully.');
+            ->with(
+                'success',
+                'IP restriction removed successfully.'
+            );
     }
+
 
     /**
      * Enable an IP restriction.
@@ -85,8 +231,12 @@ class IpRestrictionController extends Controller
 
         return redirect()
             ->route('ip-restrictions.index')
-            ->with('success', 'IP restriction activated successfully.');
+            ->with(
+                'success',
+                'IP restriction activated successfully.'
+            );
     }
+
 
     /**
      * Disable an IP restriction.
@@ -99,8 +249,12 @@ class IpRestrictionController extends Controller
 
         return redirect()
             ->route('ip-restrictions.index')
-            ->with('success', 'IP restriction deactivated successfully.');
+            ->with(
+                'success',
+                'IP restriction deactivated successfully.'
+            );
     }
+
 
     /**
      * Clear all blocked IP logs.
@@ -111,78 +265,258 @@ class IpRestrictionController extends Controller
 
         return redirect()
             ->route('ip-restrictions.index')
-            ->with('success', 'Blocked IP logs cleared successfully.');
+            ->with(
+                'success',
+                'Blocked IP logs cleared successfully.'
+            );
     }
 
-    public function analytics()
+
+    /**
+     * Export IP restrictions CSV.
+     */
+    public function exportRestrictions(): StreamedResponse
     {
-        $totalBlockedAttempts = BlockedIpLog::count();
+        $restrictions = IpRestriction::latest()->get();
 
-        $todayBlockedAttempts = BlockedIpLog::whereDate(
-            'blocked_at',
-            today()
-        )->count();
+        return response()->streamDownload(function () use ($restrictions) {
 
-        $lastSevenDaysBlockedAttempts = BlockedIpLog::where(
-            'blocked_at',
-            '>=',
-            now()->subDays(6)->startOfDay()
-        )->count();
+            $handle = fopen('php://output', 'w');
 
-        $uniqueBlockedIps = BlockedIpLog::distinct(
-            'ip_address'
-        )->count('ip_address');
+            fputcsv($handle, [
+                'ID',
+                'IP Address',
+                'Reason',
+                'Status',
+                'Expires At',
+                'Created At',
+            ]);
 
-        $topBlockedIps = BlockedIpLog::select('ip_address')
+            foreach ($restrictions as $restriction) {
+
+                if ($restriction->isCurrentlyBlocked()) {
+                    $status = 'Blocked';
+                } elseif (
+                    $restriction->is_active &&
+                    $restriction->expires_at &&
+                    $restriction->expires_at->isPast()
+                ) {
+                    $status = 'Expired';
+                } else {
+                    $status = 'Allowed';
+                }
+
+                fputcsv($handle, [
+                    $restriction->id,
+                    $restriction->ip_address,
+                    $restriction->reason ?? '',
+                    $status,
+                    $restriction->expires_at
+                        ? $restriction->expires_at->format(
+                            'Y-m-d H:i:s'
+                        )
+                        : 'Permanent',
+                    $restriction->created_at
+                        ? $restriction->created_at->format(
+                            'Y-m-d H:i:s'
+                        )
+                        : '',
+                ]);
+            }
+
+            fclose($handle);
+        }, 'ip-restrictions.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+
+    /**
+     * Export blocked logs CSV.
+     */
+    public function exportLogs(): StreamedResponse
+    {
+        $logs = BlockedIpLog::latest('blocked_at')->get();
+
+        return response()->streamDownload(function () use ($logs) {
+
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'ID',
+                'IP Address',
+                'Method',
+                'Path',
+                'User Agent',
+                'Blocked At',
+            ]);
+
+            foreach ($logs as $log) {
+
+                fputcsv($handle, [
+                    $log->id,
+                    $log->ip_address,
+                    $log->method ?? '',
+                    $log->path ?? '',
+                    $log->user_agent ?? '',
+                    $log->blocked_at
+                        ? $log->blocked_at->format(
+                            'Y-m-d H:i:s'
+                        )
+                        : '',
+                ]);
+            }
+
+            fclose($handle);
+        }, 'blocked-ip-logs.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+
+    /**
+     * Security analytics.
+     */
+    public function analytics(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Date Filter
+        |--------------------------------------------------------------------------
+        */
+
+        $from = $request->input('from');
+        $to = $request->input('to');
+
+        $logQuery = BlockedIpLog::query();
+
+        if ($from) {
+            $logQuery->whereDate('blocked_at', '>=', $from);
+        }
+
+        if ($to) {
+            $logQuery->whereDate('blocked_at', '<=', $to);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $totalBlockedAttempts = (clone $logQuery)->count();
+
+        $todayBlockedAttempts = (clone $logQuery)
+            ->whereDate('blocked_at', today())
+            ->count();
+
+        $lastSevenDaysBlockedAttempts = (clone $logQuery)
+            ->where(
+                'blocked_at',
+                '>=',
+                now()->subDays(6)->startOfDay()
+            )
+            ->count();
+
+        $uniqueBlockedIps = (clone $logQuery)
+            ->distinct('ip_address')
+            ->count('ip_address');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Top Blocked IPs
+        |--------------------------------------------------------------------------
+        */
+
+        $topBlockedIps = (clone $logQuery)
+            ->select('ip_address')
             ->selectRaw('COUNT(*) as attempts')
             ->groupBy('ip_address')
             ->orderByDesc('attempts')
-            ->limit(10)
+            ->limit(5)
             ->get();
 
-        $topTargetedRoutes = BlockedIpLog::select('path')
+        /*
+        |--------------------------------------------------------------------------
+        | Top Routes
+        |--------------------------------------------------------------------------
+        */
+
+        $topTargetedRoutes = (clone $logQuery)
+            ->select('path')
             ->selectRaw('COUNT(*) as attempts')
             ->whereNotNull('path')
             ->groupBy('path')
             ->orderByDesc('attempts')
-            ->limit(10)
+            ->limit(5)
             ->get();
 
-        $methodStatistics = BlockedIpLog::select('method')
+        /*
+        |--------------------------------------------------------------------------
+        | HTTP Methods
+        |--------------------------------------------------------------------------
+        */
+
+        $methodStatistics = (clone $logQuery)
+            ->select('method')
             ->selectRaw('COUNT(*) as attempts')
             ->whereNotNull('method')
             ->groupBy('method')
             ->orderByDesc('attempts')
             ->get();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Seven Day Statistics
+        |--------------------------------------------------------------------------
+        */
+
         $sevenDayStatistics = [];
 
         for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i)->startOfDay();
+
+            $date = now()
+                ->subDays($i)
+                ->startOfDay();
 
             $sevenDayStatistics[] = [
                 'date' => $date->format('d M'),
-                'attempts' => BlockedIpLog::whereDate(
-                    'blocked_at',
-                    $date->toDateString()
-                )->count(),
+
+                'attempts' => (clone $logQuery)
+                    ->whereDate(
+                        'blocked_at',
+                        $date->toDateString()
+                    )
+                    ->count(),
             ];
         }
 
-        $recentActivity = BlockedIpLog::latest('blocked_at')
-            ->limit(10)
+        /*
+        |--------------------------------------------------------------------------
+        | Recent Activity
+        |--------------------------------------------------------------------------
+        */
+
+        $recentActivity = (clone $logQuery)
+            ->oldest('blocked_at')
+            ->limit(5)
             ->get();
 
-        return view('security-analytics.index', compact(
-            'totalBlockedAttempts',
-            'todayBlockedAttempts',
-            'lastSevenDaysBlockedAttempts',
-            'uniqueBlockedIps',
-            'topBlockedIps',
-            'topTargetedRoutes',
-            'methodStatistics',
-            'sevenDayStatistics',
-            'recentActivity'
-        ));
+        return view(
+            'security-analytics.index',
+            compact(
+                'totalBlockedAttempts',
+                'todayBlockedAttempts',
+                'lastSevenDaysBlockedAttempts',
+                'uniqueBlockedIps',
+                'topBlockedIps',
+                'topTargetedRoutes',
+                'methodStatistics',
+                'sevenDayStatistics',
+                'recentActivity',
+                'from',
+                'to'
+            )
+        );
     }
 }

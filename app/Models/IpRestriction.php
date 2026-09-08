@@ -33,7 +33,10 @@ class IpRestriction extends Model
             return false;
         }
 
-        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+        if (
+            $this->expires_at !== null &&
+            $this->expires_at->isPast()
+        ) {
             return false;
         }
 

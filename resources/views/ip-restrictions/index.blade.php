@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -47,129 +48,181 @@
             border-radius: 14px;
             border: 0;
         }
+
+        .filter-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
     </style>
+
 </head>
+
 
 <body>
 
-    <div class="container py-5">
+    <div class="container-fluid px-3 px-md-5 py-5">
 
         {{-- Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
 
             <div>
+
                 <h1 class="page-title mb-1">
-                    IP Restriction Dashboard
+                    🛡️ IP Restriction Dashboard
                 </h1>
 
                 <p class="text-muted mb-0">
                     Manage blocked IP addresses and monitor access attempts.
                 </p>
+
             </div>
 
-            <div>
+
+            <div class="d-flex gap-2">
+
                 <a
                     href="{{ route('security-analytics.index') }}"
                     class="btn btn-dark">
-                    📊 Security Analytics
+                    📊 Analytics
                 </a>
+
+                <a
+                    href="{{ route('ip-restrictions.export') }}"
+                    class="btn btn-success">
+                    📥 Export IPs
+                </a>
+
             </div>
 
         </div>
 
 
-        {{-- Success Message --}}
+        {{-- Success --}}
+
         @if(session('success'))
+
         <div class="alert alert-success alert-dismissible fade show">
+
             {{ session('success') }}
 
             <button
                 type="button"
                 class="btn-close"
                 data-bs-dismiss="alert"></button>
+
         </div>
+
         @endif
 
 
-        {{-- Validation Errors --}}
+        {{-- Errors --}}
+
         @if($errors->any())
+
         <div class="alert alert-danger">
 
             <strong>Please fix the following errors:</strong>
 
             <ul class="mb-0 mt-2">
+
                 @foreach($errors->all() as $error)
+
                 <li>{{ $error }}</li>
+
                 @endforeach
+
             </ul>
 
         </div>
+
         @endif
 
 
         {{-- Statistics --}}
+
         <div class="row g-4 mb-4">
 
-            <div class="col-md-4">
+            <div class="col-12 col-md-3">
 
-                <div class="card stat-card shadow-sm">
+                <div class="card stat-card shadow-sm h-100">
+
                     <div class="card-body">
 
-                        <h6 class="text-muted">
+                        <small class="text-muted">
                             Total Restrictions
-                        </h6>
+                        </small>
 
-                        <h2 class="mb-0">
-                            {{ $restrictions->count() }}
+                        <h2 class="fw-bold mb-0">
+                            {{ number_format($totalRestrictions) }}
                         </h2>
 
                     </div>
+
                 </div>
 
             </div>
 
 
-            <div class="col-md-4">
+            <div class="col-12 col-md-3">
 
-                <div class="card stat-card shadow-sm">
+                <div class="card stat-card shadow-sm h-100">
+
                     <div class="card-body">
 
-                        <h6 class="text-muted">
+                        <small class="text-muted">
                             Active Restrictions
-                        </h6>
+                        </small>
 
-                        <h2 class="mb-0">
-
-                            {{
-                            $restrictions
-                                ->filter(fn ($restriction) =>
-                                    $restriction->isCurrentlyBlocked()
-                                )
-                                ->count()
-                        }}
-
+                        <h2 class="fw-bold text-danger mb-0">
+                            {{ number_format($activeRestrictions) }}
                         </h2>
 
                     </div>
+
                 </div>
 
             </div>
 
 
-            <div class="col-md-4">
+            <div class="col-12 col-md-3">
 
-                <div class="card stat-card shadow-sm">
+                <div class="card stat-card shadow-sm h-100">
+
                     <div class="card-body">
 
-                        <h6 class="text-muted">
-                            Blocked Attempts
-                        </h6>
+                        <small class="text-muted">
+                            Expired
+                        </small>
 
-                        <h2 class="mb-0">
-                            {{ $logs->total() }}
+                        <h2 class="fw-bold text-warning mb-0">
+                            {{ number_format($expiredRestrictions) }}
                         </h2>
 
                     </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-12 col-md-3">
+
+                <div class="card stat-card shadow-sm h-100">
+
+                    <div class="card-body">
+
+                        <small class="text-muted">
+                            Blocked Attempts
+                        </small>
+
+                        <h2 class="fw-bold text-primary mb-0">
+                            {{ number_format($blockedAttempts) }}
+                        </h2>
+
+                    </div>
+
                 </div>
 
             </div>
@@ -178,13 +231,15 @@
 
 
         {{-- Add IP --}}
+
         <div class="card dashboard-card mb-4">
 
             <div class="card-body p-4">
 
                 <h4 class="mb-4">
-                    Add IP Restriction
+                    ➕ Add IP Restriction
                 </h4>
+
 
                 <form
                     action="{{ route('ip-restrictions.store') }}"
@@ -240,7 +295,7 @@
                                 value="{{ old('expires_at') }}">
 
                             <small class="text-muted">
-                                Leave empty for permanent blocking.
+                                Empty = permanent block
                             </small>
 
                         </div>
@@ -251,7 +306,7 @@
                             <button
                                 type="submit"
                                 class="btn btn-danger">
-                                Block IP Address
+                                🚫 Block IP Address
                             </button>
 
                         </div>
@@ -265,16 +320,156 @@
         </div>
 
 
-        {{-- IP Restrictions --}}
+        {{-- Search / Filter --}}
+
+        <div class="filter-card p-4 mb-4">
+
+            <form
+                method="GET"
+                action="{{ route('ip-restrictions.index') }}">
+
+                <div class="row g-3 align-items-end">
+
+                    {{-- Search --}}
+
+                    <div class="col-md-4">
+
+                        <label class="form-label fw-semibold">
+                            🔎 Search
+                        </label>
+
+                        <input
+                            type="text"
+                            name="search"
+                            class="form-control"
+                            placeholder="Search IP or reason..."
+                            value="{{ $search }}">
+
+                    </div>
+
+
+                    {{-- Status --}}
+
+                    <div class="col-md-3">
+
+                        <label class="form-label fw-semibold">
+                            🎯 Status
+                        </label>
+
+                        <select
+                            name="status"
+                            class="form-select">
+
+                            <option
+                                value="all"
+                                {{ $status === 'all' ? 'selected' : '' }}>
+                                All
+                            </option>
+
+                            <option
+                                value="active"
+                                {{ $status === 'active' ? 'selected' : '' }}>
+                                Active
+                            </option>
+
+                            <option
+                                value="disabled"
+                                {{ $status === 'disabled' ? 'selected' : '' }}>
+                                Disabled
+                            </option>
+
+                            <option
+                                value="expired"
+                                {{ $status === 'expired' ? 'selected' : '' }}>
+                                Expired
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    {{-- Sort --}}
+
+                    <div class="col-md-3">
+
+                        <label class="form-label fw-semibold">
+                            ↕️ Sort
+                        </label>
+
+                        <select
+                            name="sort"
+                            class="form-select">
+
+                            <option
+                                value="latest"
+                                {{ $sort === 'latest' ? 'selected' : '' }}>
+                                Newest First
+                            </option>
+
+                            <option
+                                value="oldest"
+                                {{ $sort === 'oldest' ? 'selected' : '' }}>
+                                Oldest First
+                            </option>
+
+                            <option
+                                value="ip_asc"
+                                {{ $sort === 'ip_asc' ? 'selected' : '' }}>
+                                IP A-Z
+                            </option>
+
+                            <option
+                                value="ip_desc"
+                                {{ $sort === 'ip_desc' ? 'selected' : '' }}>
+                                IP Z-A
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    {{-- Buttons --}}
+
+                    <div class="col-md-2">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100">
+                            Apply
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        {{-- Restrictions --}}
+
         <div class="card dashboard-card mb-4">
 
             <div class="card-body p-4">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
 
-                    <h4 class="mb-0">
-                        Blocked IP Addresses
-                    </h4>
+                    <div>
+
+                        <h4 class="mb-1">
+                            🚫 Blocked IP Addresses
+                        </h4>
+
+                        <small class="text-muted">
+                            Showing {{ $restrictions->count() }}
+                            of {{ $restrictions->total() }}
+                            restrictions
+                        </small>
+
+                    </div>
 
                 </div>
 
@@ -288,15 +483,23 @@
                         <thead>
 
                             <tr>
+
                                 <th>#</th>
+
                                 <th>IP Address</th>
+
                                 <th>Reason</th>
+
                                 <th>Expires</th>
+
                                 <th>Status</th>
+
                                 <th>Actions</th>
+
                             </tr>
 
                         </thead>
+
 
                         <tbody>
 
@@ -305,30 +508,40 @@
                             <tr>
 
                                 <td>
-                                    {{ $loop->iteration }}
+                                    {{ $restrictions->firstItem() + $loop->index }}
                                 </td>
 
+
                                 <td>
+
                                     <span class="ip-address">
                                         {{ $restriction->ip_address }}
                                     </span>
+
                                 </td>
+
 
                                 <td>
                                     {{ $restriction->reason ?? 'No reason provided' }}
                                 </td>
 
+
                                 <td>
 
                                     @if($restriction->expires_at)
 
-                                    {{ $restriction->expires_at->format('d M Y, h:i A') }}
+                                    {{ $restriction->expires_at->format(
+                                                'd M Y, h:i A'
+                                            ) }}
 
                                     @if($restriction->expires_at->isPast())
+
                                     <br>
-                                    <span class="text-muted">
+
+                                    <span class="text-danger">
                                         Expired
                                     </span>
+
                                     @endif
 
                                     @else
@@ -341,12 +554,23 @@
 
                                 </td>
 
+
                                 <td>
 
                                     @if($restriction->isCurrentlyBlocked())
 
                                     <span class="badge bg-danger status-badge">
                                         Blocked
+                                    </span>
+
+                                    @elseif(
+                                    $restriction->is_active &&
+                                    $restriction->expires_at &&
+                                    $restriction->expires_at->isPast()
+                                    )
+
+                                    <span class="badge bg-warning text-dark status-badge">
+                                        Expired
                                     </span>
 
                                     @else
@@ -359,20 +583,22 @@
 
                                 </td>
 
+
                                 <td>
 
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 flex-wrap">
 
                                         @if($restriction->is_active)
 
                                         <form
                                             action="{{ route(
-                                                    'ip-restrictions.deactivate',
-                                                    $restriction
-                                                ) }}"
+                                                        'ip-restrictions.deactivate',
+                                                        $restriction
+                                                    ) }}"
                                             method="POST">
 
                                             @csrf
+
                                             @method('PATCH')
 
                                             <button
@@ -387,12 +613,13 @@
 
                                         <form
                                             action="{{ route(
-                                                    'ip-restrictions.activate',
-                                                    $restriction
-                                                ) }}"
+                                                        'ip-restrictions.activate',
+                                                        $restriction
+                                                    ) }}"
                                             method="POST">
 
                                             @csrf
+
                                             @method('PATCH')
 
                                             <button
@@ -408,15 +635,16 @@
 
                                         <form
                                             action="{{ route(
-                                                'ip-restrictions.destroy',
-                                                $restriction
-                                            ) }}"
+                                                    'ip-restrictions.destroy',
+                                                    $restriction
+                                                ) }}"
                                             method="POST"
                                             onsubmit="return confirm(
-                                                'Are you sure you want to remove this IP restriction?'
-                                            );">
+                                                    'Are you sure you want to delete this IP restriction?'
+                                                );">
 
                                             @csrf
+
                                             @method('DELETE')
 
                                             <button
@@ -441,10 +669,21 @@
 
                 </div>
 
+
+                {{-- Pagination --}}
+
+                <div class="mt-3">
+
+                    {{ $restrictions->links() }}
+
+                </div>
+
                 @else
 
                 <div class="alert alert-info mb-0">
-                    No IP restrictions have been configured yet.
+
+                    No IP restrictions found.
+
                 </div>
 
                 @endif
@@ -454,39 +693,63 @@
         </div>
 
 
-        {{-- Blocked Access Logs --}}
+        {{-- Logs --}}
+
         <div class="card dashboard-card">
 
             <div class="card-body p-4">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
 
-                    <h4 class="mb-0">
-                        Blocked Access Logs
-                    </h4>
+                    <div>
+
+                        <h4 class="mb-1">
+                            🚨 Blocked Access Logs
+                        </h4>
+
+                        <small class="text-muted">
+                            {{ number_format($logs->total()) }}
+                            total blocked attempts
+                        </small>
+
+                    </div>
 
 
-                    @if($logs->count())
+                    <div class="d-flex gap-2">
 
-                    <form
-                        action="{{ route('ip-restrictions.logs.clear') }}"
-                        method="POST"
-                        onsubmit="return confirm(
-                            'Are you sure you want to clear all logs?'
-                        );">
+                        <a
+                            href="{{ route('ip-restrictions.logs.export') }}"
+                            class="btn btn-sm btn-success">
+                            📥 Export Logs
+                        </a>
 
-                        @csrf
-                        @method('DELETE')
 
-                        <button
-                            type="submit"
-                            class="btn btn-sm btn-outline-danger">
-                            Clear Logs
-                        </button>
+                        @if($logs->total())
 
-                    </form>
+                        <form
+                            action="{{ route(
+                                'ip-restrictions.logs.clear'
+                            ) }}"
+                            method="POST"
+                            onsubmit="return confirm(
+                                'Are you sure you want to clear all logs?'
+                            );">
 
-                    @endif
+                            @csrf
+
+                            @method('DELETE')
+
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-outline-danger">
+                                🗑 Clear Logs
+                            </button>
+
+                        </form>
+
+                        @endif
+
+                    </div>
 
                 </div>
 
@@ -500,15 +763,23 @@
                         <thead>
 
                             <tr>
+
                                 <th>#</th>
+
                                 <th>IP Address</th>
+
                                 <th>Method</th>
-                                <th>Requested URL</th>
+
+                                <th>URL</th>
+
                                 <th>User Agent</th>
+
                                 <th>Blocked At</th>
+
                             </tr>
 
                         </thead>
+
 
                         <tbody>
 
@@ -520,23 +791,29 @@
                                     {{ $logs->firstItem() + $loop->index }}
                                 </td>
 
+
                                 <td>
+
                                     <span class="ip-address">
                                         {{ $log->ip_address }}
                                     </span>
+
                                 </td>
+
 
                                 <td>
 
                                     <span class="badge bg-secondary">
-                                        {{ $log->method }}
+                                        {{ $log->method ?? 'N/A' }}
                                     </span>
 
                                 </td>
 
+
                                 <td>
                                     /{{ $log->path }}
                                 </td>
+
 
                                 <td style="max-width: 300px;">
 
@@ -546,10 +823,16 @@
 
                                 </td>
 
+
                                 <td>
-                                    {{ $log->blocked_at->format(
-                                        'd M Y, h:i:s A'
-                                    ) }}
+
+                                    {{ $log->blocked_at
+                                            ? $log->blocked_at->format(
+                                                'd M Y, h:i:s A'
+                                            )
+                                            : 'N/A'
+                                        }}
+
                                 </td>
 
                             </tr>
@@ -563,6 +846,8 @@
                 </div>
 
 
+                {{-- Log Pagination --}}
+
                 <div class="mt-3">
 
                     {{ $logs->links() }}
@@ -572,12 +857,26 @@
                 @else
 
                 <div class="alert alert-success mb-0">
+
                     No blocked access attempts have been recorded.
+
                 </div>
 
                 @endif
 
             </div>
+
+        </div>
+
+
+        {{-- Footer --}}
+
+        <div class="text-center text-muted py-4">
+
+            <small>
+                IP Restriction Security System
+                &copy; {{ date('Y') }}
+            </small>
 
         </div>
 
