@@ -13,29 +13,60 @@ class BlockIpMiddleware
     /**
      * Handle an incoming request.
      */
-    public function handle(Request $request, Closure $next): Response
-    {
+    public function handle(
+        Request $request,
+        Closure $next
+    ): Response {
+
         $ipAddress = $request->ip();
 
-        $restriction = IpRestriction::where('ip_address', $ipAddress)
+        $restriction = IpRestriction::where(
+            'ip_address',
+            $ipAddress
+        )
             ->where('is_active', true)
             ->first();
 
-        if ($restriction && $restriction->isCurrentlyBlocked()) {
+        if ($restriction) {
 
-            // Record blocked request
-            BlockedIpLog::create([
-                'ip_address' => $ipAddress,
-                'path' => $request->path(),
-                'method' => $request->method(),
-                'user_agent' => $request->userAgent(),
-                'blocked_at' => now(),
-            ]);
+            /*
+            |--------------------------------------------------------------------------
+            | Automatically deactivate expired restriction
+            |--------------------------------------------------------------------------
+            */
 
-            abort(
-                403,
-                'You are restricted from accessing this site.'
-            );
+            if (
+                $restriction->expires_at &&
+                $restriction->expires_at->isPast()
+            ) {
+                $restriction->update([
+                    'is_active' => false,
+                ]);
+
+                return $next($request);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Block request
+            |--------------------------------------------------------------------------
+            */
+
+            if ($restriction->isCurrentlyBlocked()) {
+
+                BlockedIpLog::create([
+                    'ip_address' => $ipAddress,
+                    'path' => $request->path(),
+                    'method' => $request->method(),
+                    'user_agent' => $request->userAgent(),
+                    'blocked_at' => now(),
+                ]);
+
+                abort(
+                    403,
+                    'You are restricted from accessing this site.'
+                );
+            }
         }
 
         return $next($request);

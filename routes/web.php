@@ -3,14 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IpRestrictionController;
 
+
 /*
 |--------------------------------------------------------------------------
-| IP Restriction Management
+| IP Restriction Dashboard
 |--------------------------------------------------------------------------
-|
-| These routes allow you to manage blocked IP addresses,
-| activate/deactivate restrictions, and view blocked attempts.
-|
 */
 
 Route::get('/ip-restrictions', [
@@ -18,19 +15,58 @@ Route::get('/ip-restrictions', [
     'index'
 ])->name('ip-restrictions.index');
 
+
+/*
+|--------------------------------------------------------------------------
+| Security Analytics
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/security-analytics', [
     IpRestrictionController::class,
     'analytics'
 ])->name('security-analytics.index');
+
+
+/*
+|--------------------------------------------------------------------------
+| Store IP Restriction
+|--------------------------------------------------------------------------
+*/
 
 Route::post('/ip-restrictions', [
     IpRestrictionController::class,
     'store'
 ])->name('ip-restrictions.store');
 
+
 /*
 |--------------------------------------------------------------------------
-| Clear blocked IP logs
+| Export Restrictions
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/ip-restrictions/export', [
+    IpRestrictionController::class,
+    'exportRestrictions'
+])->name('ip-restrictions.export');
+
+
+/*
+|--------------------------------------------------------------------------
+| Export Logs
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/ip-restrictions/logs/export', [
+    IpRestrictionController::class,
+    'exportLogs'
+])->name('ip-restrictions.logs.export');
+
+
+/*
+|--------------------------------------------------------------------------
+| Clear Logs
 |--------------------------------------------------------------------------
 */
 
@@ -39,47 +75,69 @@ Route::delete('/ip-restrictions/logs/clear', [
     'clearLogs'
 ])->name('ip-restrictions.logs.clear');
 
-/*
-|--------------------------------------------------------------------------
-| Activate / Deactivate IP restriction
-|--------------------------------------------------------------------------
-*/
-
-Route::patch('/ip-restrictions/{ipRestriction}/activate', [
-    IpRestrictionController::class,
-    'activate'
-])->name('ip-restrictions.activate');
-
-Route::patch('/ip-restrictions/{ipRestriction}/deactivate', [
-    IpRestrictionController::class,
-    'deactivate'
-])->name('ip-restrictions.deactivate');
 
 /*
 |--------------------------------------------------------------------------
-| Delete IP restriction
+| Activate
 |--------------------------------------------------------------------------
 */
 
-Route::delete('/ip-restrictions/{ipRestriction}', [
-    IpRestrictionController::class,
-    'destroy'
-])->name('ip-restrictions.destroy');
+Route::patch(
+    '/ip-restrictions/{ipRestriction}/activate',
+    [
+        IpRestrictionController::class,
+        'activate'
+    ]
+)->name('ip-restrictions.activate');
 
 
 /*
 |--------------------------------------------------------------------------
-| Test Route Protected By IP Middleware
+| Deactivate
 |--------------------------------------------------------------------------
-|
-| Use this route to test whether an IP address is blocked.
-|
 */
 
-Route::middleware(['blockIP'])->get('/protected', function () {
-    return response()->json([
-        'success' => true,
-        'message' => 'Your IP address is allowed to access this protected page.',
-        'ip_address' => request()->ip(),
-    ]);
-});
+Route::patch(
+    '/ip-restrictions/{ipRestriction}/deactivate',
+    [
+        IpRestrictionController::class,
+        'deactivate'
+    ]
+)->name('ip-restrictions.deactivate');
+
+
+/*
+|--------------------------------------------------------------------------
+| Delete
+|--------------------------------------------------------------------------
+*/
+
+Route::delete(
+    '/ip-restrictions/{ipRestriction}',
+    [
+        IpRestrictionController::class,
+        'destroy'
+    ]
+)->name('ip-restrictions.destroy');
+
+
+/*
+|--------------------------------------------------------------------------
+| Protected Test Route
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['blockIP'])->get(
+    '/protected',
+    function () {
+
+        return response()->json([
+            'success' => true,
+
+            'message' =>
+            'Your IP address is allowed to access this protected page.',
+
+            'ip_address' => request()->ip(),
+        ]);
+    }
+);
