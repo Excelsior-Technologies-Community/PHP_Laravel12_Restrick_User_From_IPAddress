@@ -15,12 +15,17 @@ class BlockedIpLog extends Model
         'method',
         'user_agent',
         'blocked_at',
+        'country_code',
+        'city',
+        'reputation_score',
+        'is_auto_blocked',
     ];
 
     protected function casts(): array
     {
         return [
             'blocked_at' => 'datetime',
+            'is_auto_blocked' => 'boolean',
         ];
     }
 }

@@ -12,8 +12,38 @@
         rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
+        :root {
+            --bg-body: #f5f7fb;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --table-hover: rgba(0, 0, 0, 0.02);
+            --shadow-color: rgba(0, 0, 0, 0.06);
+            --badge-bg: #6c757d;
+            --badge-color: #ffffff;
+            --thead-bg: #f8f9fa;
+            --thead-color: #212529;
+            --link-color: #0d6efd;
+        }
+        [data-theme="dark"] {
+            --bg-body: #0b0d10;
+            --bg-card: #15181e;
+            --bg-input: #1c1f27;
+            --text-color: #e4e6eb;
+            --text-muted: #9aa3af;
+            --border-color: #2a2f3a;
+            --table-hover: rgba(255, 255, 255, 0.03);
+            --shadow-color: rgba(0, 0, 0, 0.45);
+            --badge-bg: #2a2f3a;
+            --badge-color: #e4e6eb;
+            --thead-bg: #1c1f27;
+            --thead-color: #e4e6eb;
+            --link-color: #7aa6ff;
+        }
         body {
             background: #f5f7fb;
         }
@@ -45,14 +75,12 @@
             font-size: 30px;
             font-weight: 700;
         }
-
         .analytics-card {
             background: #ffffff;
             border-radius: 12px;
             border: none;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-
         .analytics-card .card-header {
             background: #ffffff;
             border-bottom: 1px solid #eee;
@@ -68,7 +96,6 @@
             font-family: monospace;
             font-size: 13px;
         }
-
         .chart-container {
             position: relative;
             height: 350px;
@@ -88,7 +115,6 @@
         .activity-item:last-child {
             border-bottom: none;
         }
-
         .route-text {
             word-break: break-all;
             font-family: monospace;
@@ -103,7 +129,6 @@
         }
     </style>
 </head>
-
 <body>
 
 <div class="container-fluid py-4">
@@ -115,7 +140,6 @@
     <div class="analytics-header">
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-
             <div>
                 <h2 class="mb-1">🔐 Security Analytics</h2>
 
@@ -131,11 +155,9 @@
                     ← IP Restrictions
                 </a>
             </div>
-
         </div>
 
     </div>
-
 
     {{-- ========================================================= --}}
     {{-- DATE FILTER --}}
@@ -299,7 +321,6 @@
             </div>
 
         </div>
-
     </div>
 
 
@@ -308,11 +329,9 @@
     {{-- ========================================================= --}}
 
     <div class="card analytics-card mb-4">
-
         <div class="card-header">
             📊 Blocked Attempts - Last 7 Days
         </div>
-
         <div class="card-body">
 
             <div class="chart-container">
@@ -320,7 +339,6 @@
             </div>
 
         </div>
-
     </div>
 
 
@@ -334,7 +352,6 @@
         <div class="col-lg-6">
 
             <div class="card analytics-card h-100">
-
                 <div class="card-header">
                     🚫 Top Blocked IP Addresses
                 </div>
@@ -392,25 +409,18 @@
                         </div>
 
                     @else
-
                         <div class="empty-state">
                             No blocked IP data available.
                         </div>
-
                     @endif
-
                 </div>
-
             </div>
-
         </div>
-
 
         {{-- HTTP METHODS --}}
         <div class="col-lg-6">
 
             <div class="card analytics-card h-100">
-
                 <div class="card-header">
                     🌐 HTTP Methods
                 </div>
@@ -486,19 +496,13 @@
                         </div>
 
                     @else
-
                         <div class="empty-state">
                             No HTTP method data available.
                         </div>
-
                     @endif
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
 
@@ -507,19 +511,15 @@
     {{-- ========================================================= --}}
 
     <div class="card analytics-card mb-4">
-
         <div class="card-header">
             🎯 Most Targeted Routes
         </div>
-
         <div class="card-body p-0">
 
             @if(isset($topTargetedRoutes) && $topTargetedRoutes->count())
 
                 <div class="table-responsive">
-
                     <table class="table table-hover mb-0">
-
                         <thead class="table-light">
 
                         <tr>
@@ -537,7 +537,6 @@
                         </tr>
 
                         </thead>
-
                         <tbody>
 
                         @foreach($topTargetedRoutes as $index => $item)
@@ -565,21 +564,14 @@
                         @endforeach
 
                         </tbody>
-
                     </table>
-
                 </div>
-
             @else
-
                 <div class="empty-state">
                     No targeted route data available.
                 </div>
-
             @endif
-
         </div>
-
     </div>
 
 
@@ -588,11 +580,9 @@
     {{-- ========================================================= --}}
 
     <div class="card analytics-card mb-4">
-
         <div class="card-header">
             🕒 Recent Blocked Activity
         </div>
-
         <div class="card-body p-0">
 
             @if(isset($recentActivity) && $recentActivity->count())
@@ -618,7 +608,6 @@
                         </tr>
 
                         </thead>
-
                         <tbody>
 
                         @foreach($recentActivity as $activity)
@@ -680,13 +669,9 @@
                         @endforeach
 
                         </tbody>
-
                     </table>
-
                 </div>
-
             @else
-
                 <div class="empty-state">
 
                     <h5>No Recent Activity</h5>
@@ -696,11 +681,8 @@
                     </p>
 
                 </div>
-
             @endif
-
         </div>
-
     </div>
 
 
@@ -713,7 +695,6 @@
         Laravel 12 · IP Restriction Security Analytics
 
     </div>
-
 </div>
 
 
@@ -760,7 +741,6 @@
         new Chart(chartCanvas, {
 
             type: 'line',
-
             data: {
 
                 labels: chartLabels,
@@ -783,11 +763,9 @@
 
                 ]
             },
-
             options: {
 
                 responsive: true,
-
                 maintainAspectRatio: false,
 
                 plugins: {
@@ -817,7 +795,6 @@
             }
 
         });
-
     }
 
 </script>

@@ -4,8 +4,10 @@ namespace App\Http\Middleware;
 
 use App\Models\BlockedIpLog;
 use App\Models\IpRestriction;
+use App\Models\IpWhitelist;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class BlockIpMiddleware

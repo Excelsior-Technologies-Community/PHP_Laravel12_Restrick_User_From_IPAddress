@@ -14,6 +14,9 @@ class IpRestriction extends Model
         'reason',
         'expires_at',
         'is_active',
+        'restriction_type',
+        'cidr',
+        'country_code',
     ];
 
     protected function casts(): array
@@ -24,9 +27,6 @@ class IpRestriction extends Model
         ];
     }
 
-    /**
-     * Determine whether the restriction is currently active.
-     */
     public function isCurrentlyBlocked(): bool
     {
         if (!$this->is_active) {
