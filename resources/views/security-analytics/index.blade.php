@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="{{ request()->cookie('dark_mode', '0') == '1' ? 'dark' : 'light' }}">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Security Analytics</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -39,559 +45,760 @@
             --link-color: #7aa6ff;
         }
         body {
-            background-color: var(--bg-body);
-            color: var(--text-color);
-            transition: background 0.3s, color 0.3s;
+            background: #f5f7fb;
         }
-        .dashboard-header {
-            background: linear-gradient(135deg, #212529, #343a40);
-            color: white;
-            border-radius: 18px;
-            padding: 30px;
+
+        .analytics-header {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
             margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-        [data-theme="dark"] .dashboard-header {
-            background: linear-gradient(135deg, #0b0d10, #1f232b);
-        }
+
         .stat-card {
-            border: none;
-            border-radius: 16px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 22px;
+            height: 100%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px var(--shadow-color);
+
+        .stat-title {
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
-        .stat-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
+
+        .stat-number {
+            font-size: 30px;
+            font-weight: 700;
         }
         .analytics-card {
+            background: #ffffff;
+            border-radius: 12px;
             border: none;
-            border-radius: 16px;
-            box-shadow: 0 3px 15px var(--shadow-color);
-            background: var(--bg-card);
-            transition: background 0.3s;
-            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
         .analytics-card .card-header {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
+            background: #ffffff;
+            border-bottom: 1px solid #eee;
             padding: 18px 20px;
-            border-radius: 16px 16px 0 0;
-            color: var(--text-color);
+            font-weight: 700;
         }
-        [data-theme="dark"] .analytics-card .card-header {
-            border-bottom-color: #2a2f3a;
+
+        .table th {
+            white-space: nowrap;
+        }
+
+        .badge-ip {
+            font-family: monospace;
+            font-size: 13px;
         }
         .chart-container {
             position: relative;
-            height: 320px;
+            height: 350px;
         }
-        .ip-badge {
-            font-family: monospace;
-            font-size: 14px;
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+        }
+
+        .activity-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
         }
         .route-text {
-            font-family: monospace;
             word-break: break-all;
+            font-family: monospace;
+            font-size: 13px;
         }
-        .progress {
-            height: 8px;
-            border-radius: 10px;
-            background-color: var(--border-color);
-        }
-        .progress-bar {
-            background-color: #7aa6ff;
-        }
-        [data-theme="dark"] .progress-bar {
-            background-color: #4d7cff;
-        }
-        .activity-row td {
-            vertical-align: middle;
-        }
-        .empty-state {
-            padding: 35px 15px;
-            text-align: center;
-            color: var(--text-muted);
-        }
-        .method-badge {
-            min-width: 70px;
-            display: inline-block;
-            text-align: center;
-        }
-        .form-control, .form-select {
-            background: var(--bg-input);
-            color: var(--text-color);
-            border-color: var(--border-color);
-        }
-        .form-control:focus, .form-select:focus {
-            background: var(--bg-input);
-            color: var(--text-color);
-            border-color: #7aa6ff;
-        }
-        .form-control::placeholder {
-            color: var(--text-muted);
-        }
-        .form-label {
-            color: var(--text-color);
-            font-weight: 500;
-        }
-        .table {
-            --bs-table-bg: transparent;
-            --bs-table-color: var(--text-color);
-        }
-        .table thead th {
-            background: var(--thead-bg);
-            color: var(--thead-color);
-            border-bottom: 2px solid var(--border-color);
-            font-weight: 600;
-        }
-        .table-hover tbody tr:hover {
-            --bs-table-bg: var(--table-hover);
-        }
-        .small, small {
-            color: var(--text-muted);
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--text-color);
-        }
-        a {
-            color: var(--link-color);
-        }
-        a:hover {
-            filter: brightness(1.1);
-        }
-        .btn-close {
-            filter: invert(1);
-        }
-        [data-theme="light"] .btn-close {
-            filter: invert(0);
-        }
-        .table-light {
-            background-color: var(--thead-bg);
-            color: var(--thead-color);
-        }
-        [data-theme="dark"] .table-light {
-            background-color: #1c1f27;
-        }
-        .pagination {
-            --bs-pagination-color: var(--text-color);
-            --bs-pagination-bg: var(--bg-card);
-            --bs-pagination-border-color: var(--border-color);
-        }
-        .pagination .page-link {
-            background: var(--bg-card);
-            color: var(--text-color);
-            border-color: var(--border-color);
-        }
-        .pagination .page-item.active .page-link {
-            background: #0d6efd;
-            border-color: #0d6efd;
-            color: #fff;
-        }
-        .pagination .page-item.disabled .page-link {
-            background: var(--bg-card);
-            color: var(--text-muted);
-            border-color: var(--border-color);
-        }
-        .badge {
-            background: var(--badge-bg);
-            color: var(--badge-color);
-        }
-        .badge.bg-danger {
-            background: #dc3545 !important;
-            color: #fff !important;
-        }
-        .badge.bg-success {
-            background: #198754 !important;
-            color: #fff !important;
-        }
-        .badge.bg-warning {
-            background: #ffc107 !important;
-            color: #000 !important;
-        }
-        .badge.bg-info {
-            background: #0dcaf0 !important;
-            color: #000 !important;
-        }
-        .badge.bg-secondary {
-            background: #6c757d !important;
-            color: #fff !important;
-        }
-        [data-theme="dark"] .badge.bg-light {
-            background: #2a2f3a !important;
-            color: #e4e6eb !important;
-            border: 1px solid #3a4250;
-        }
-        [data-theme="dark"] .badge.bg-dark {
-            background: #0d1117 !important;
-            color: #c9d1d9 !important;
-            border: 1px solid #30363d;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--text-color);
-        }
-        p {
-            color: var(--text-color);
-        }
-        .card-body {
-            color: var(--text-color);
-        }
-        .card-body p, .card-body small, .card-body span {
-            color: var(--text-color);
-        }
-        .card-body .text-muted, .card-body small.text-muted {
-            color: var(--text-muted) !important;
-        }
-        .table tbody td {
-            color: var(--text-color);
+
+        .user-agent {
+            max-width: 300px;
+            word-break: break-word;
+            font-size: 12px;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
-<div class="container-fluid px-3 px-md-4 py-4">
-    {{-- Header --}}
-    <div class="dashboard-header">
+
+<div class="container-fluid py-4">
+
+    {{-- ========================================================= --}}
+    {{-- HEADER --}}
+    {{-- ========================================================= --}}
+
+    <div class="analytics-header">
+
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-                <h1 class="h2 fw-bold mb-2">📊 Security Analytics</h1>
-                <p class="mb-0 text-white-50">Monitor blocked IP activity, security events, targeted routes, and access patterns.</p>
+                <h2 class="mb-1">🔐 Security Analytics</h2>
+
+                <p class="text-muted mb-0">
+                    Laravel IP Restriction Security Monitor
+                </p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('ip-restrictions.index') }}" class="btn btn-light">← IP Management</a>
-                <form action="{{ route('ip-restrictions.dark-mode.toggle') }}" method="GET">
-                    <button type="submit" class="btn btn-outline-light">
-                        {{ request()->cookie('dark_mode', '0') == '1' ? '☀️ Light' : '🌙 Dark' }}
-                    </button>
-                </form>
+
+            <div>
+                <a
+                    href="{{ route('ip-restrictions.index') }}"
+                    class="btn btn-dark">
+                    ← IP Restrictions
+                </a>
             </div>
         </div>
+
     </div>
 
-    {{-- Statistics Cards --}}
+    {{-- ========================================================= --}}
+    {{-- DATE FILTER --}}
+    {{-- ========================================================= --}}
+
+    <div class="card analytics-card mb-4">
+
+        <div class="card-body">
+
+            <form
+                method="GET"
+                action="{{ route('security-analytics.index') }}">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-4">
+
+                        <label class="form-label fw-semibold">
+                            From Date
+                        </label>
+
+                        <input
+                            type="date"
+                            name="from"
+                            class="form-control"
+                            value="{{ $from ?? '' }}">
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label fw-semibold">
+                            To Date
+                        </label>
+
+                        <input
+                            type="date"
+                            name="to"
+                            class="form-control"
+                            value="{{ $to ?? '' }}">
+
+                    </div>
+
+
+                    <div class="col-md-2">
+
+                        <button
+                            type="submit"
+                            class="btn btn-dark w-100">
+                            🔎 Filter
+                        </button>
+
+                    </div>
+
+
+                    <div class="col-md-2">
+
+                        <a
+                            href="{{ route('security-analytics.index') }}"
+                            class="btn btn-outline-secondary w-100">
+                            Reset
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    {{-- ========================================================= --}}
+    {{-- STATISTICS --}}
+    {{-- ========================================================= --}}
+
     <div class="row g-4 mb-4">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stat-card h-100 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-2">Total Blocked Attempts</p>
-                            <h2 class="fw-bold mb-0">{{ number_format($totalBlockedAttempts) }}</h2>
-                        </div>
-                        <div class="stat-icon bg-danger-subtle text-danger">🛡️</div>
-                    </div>
-                    <small class="text-muted">All recorded blocked requests</small>
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Total Blocked Attempts
                 </div>
+
+                <div class="stat-number">
+                    {{ number_format($totalBlockedAttempts ?? 0) }}
+                </div>
+
+                <small class="text-muted">
+                    Blocked requests
+                </small>
+
             </div>
+
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stat-card h-100 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-2">Blocked Today</p>
-                            <h2 class="fw-bold mb-0">{{ number_format($todayBlockedAttempts) }}</h2>
-                        </div>
-                        <div class="stat-icon bg-warning-subtle text-warning">🚨</div>
-                    </div>
-                    <small class="text-muted">Security events recorded today</small>
+
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Today's Blocked Attempts
                 </div>
+
+                <div class="stat-number">
+                    {{ number_format($todayBlockedAttempts ?? 0) }}
+                </div>
+
+                <small class="text-muted">
+                    Requests blocked today
+                </small>
+
             </div>
+
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stat-card h-100 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-2">Last 7 Days</p>
-                            <h2 class="fw-bold mb-0">{{ number_format($lastSevenDaysBlockedAttempts) }}</h2>
-                        </div>
-                        <div class="stat-icon bg-primary-subtle text-primary">📈</div>
-                    </div>
-                    <small class="text-muted">Recent blocked access attempts</small>
+
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Last 7 Days
                 </div>
+
+                <div class="stat-number">
+                    {{ number_format($lastSevenDaysBlockedAttempts ?? 0) }}
+                </div>
+
+                <small class="text-muted">
+                    Recent blocked requests
+                </small>
+
             </div>
+
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stat-card h-100 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-2">Unique Blocked IPs</p>
-                            <h2 class="fw-bold mb-0">{{ number_format($uniqueBlockedIps) }}</h2>
-                        </div>
-                        <div class="stat-icon bg-success-subtle text-success">🌐</div>
-                    </div>
-                    <small class="text-muted">Different IP addresses detected</small>
+
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Unique Blocked IPs
                 </div>
+
+                <div class="stat-number">
+                    {{ number_format($uniqueBlockedIps ?? 0) }}
+                </div>
+
+                <small class="text-muted">
+                    Different IP addresses
+                </small>
+
             </div>
+
         </div>
     </div>
 
-    {{-- Seven Day Chart --}}
+
+    {{-- ========================================================= --}}
+    {{-- 7 DAY CHART --}}
+    {{-- ========================================================= --}}
+
     <div class="card analytics-card mb-4">
         <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-1 fw-bold">📈 Blocked Attempts - Last 7 Days</h5>
-                    <small class="text-muted">Daily blocked request activity</small>
-                </div>
-                <span class="badge bg-dark">7 Days</span>
-            </div>
+            📊 Blocked Attempts - Last 7 Days
         </div>
         <div class="card-body">
+
             <div class="chart-container">
-                <canvas id="blockedAttemptsChart"></canvas>
+                <canvas id="sevenDayChart"></canvas>
             </div>
+
         </div>
     </div>
 
-    {{-- Filters --}}
-    <div class="card analytics-card mb-4">
-        <div class="card-body p-3">
-            <form action="{{ route('security-analytics.index') }}" method="GET" class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label">Search IP / Route</label>
-                    <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ $search ?? '' }}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Method</label>
-                    <select name="method" class="form-select">
-                        <option value="">All Methods</option>
-                        <option value="GET" {{ ($methodFilter ?? '') == 'GET' ? 'selected' : '' }}>GET</option>
-                        <option value="POST" {{ ($methodFilter ?? '') == 'POST' ? 'selected' : '' }}>POST</option>
-                        <option value="PUT" {{ ($methodFilter ?? '') == 'PUT' ? 'selected' : '' }}>PUT</option>
-                        <option value="DELETE" {{ ($methodFilter ?? '') == 'DELETE' ? 'selected' : '' }}>DELETE</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-dark w-100">Apply Filters</button>
-                </div>
-            </form>
-        </div>
-    </div>
+
+    {{-- ========================================================= --}}
+    {{-- TOP BLOCKED IPS + HTTP METHODS --}}
+    {{-- ========================================================= --}}
 
     <div class="row g-4 mb-4">
-        {{-- Top Blocked IPs --}}
-        <div class="col-12 col-xl-6">
+
+        {{-- TOP BLOCKED IPS --}}
+        <div class="col-lg-6">
+
             <div class="card analytics-card h-100">
                 <div class="card-header">
-                    <h5 class="fw-bold mb-1">🌐 Top Blocked IP Addresses</h5>
-                    <small class="text-muted">IP addresses generating the most blocked requests</small>
+                    🚫 Top Blocked IP Addresses
                 </div>
-                <div class="card-body">
-                    @if($topBlockedIps->count())
-                        @php $maxIpAttempts = $topBlockedIps->max('attempts'); @endphp
-                        @foreach($topBlockedIps as $index => $ip)
-                            @php $percentage = $maxIpAttempts > 0 ? ($ip->attempts / $maxIpAttempts) * 100 : 0; @endphp
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div>
-                                        <span class="badge bg-light text-dark border me-2">#{{ $index + 1 }}</span>
-                                        <span class="ip-badge">{{ $ip->ip_address }}</span>
-                                    </div>
-                                    <strong>{{ number_format($ip->attempts) }}</strong>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar" role="progressbar" style="width: {{ $percentage }}%"></div>
-                                </div>
-                            </div>
-                        @endforeach
-                    @else
-                        <div class="empty-state">
-                            <div class="fs-1 mb-2">🌐</div>
-                            <p class="mb-0">No blocked IP activity recorded yet.</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
 
-        {{-- HTTP Methods --}}
-        <div class="col-12 col-xl-6">
-            <div class="card analytics-card h-100">
-                <div class="card-header">
-                    <h5 class="fw-bold mb-1">🔐 Blocked Requests by Method</h5>
-                    <small class="text-muted">HTTP methods associated with blocked requests</small>
-                </div>
-                <div class="card-body">
-                    @if($methodStatistics->count())
-                        @php $maxMethodAttempts = $methodStatistics->max('attempts'); @endphp
-                        @foreach($methodStatistics as $method)
-                            @php $percentage = $maxMethodAttempts > 0 ? ($method->attempts / $maxMethodAttempts) * 100 : 0; @endphp
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-dark method-badge">{{ $method->method }}</span>
-                                    <strong>{{ number_format($method->attempts) }}</strong>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar" role="progressbar" style="width: {{ $percentage }}%"></div>
-                                </div>
-                            </div>
-                        @endforeach
-                    @else
-                        <div class="empty-state">
-                            <div class="fs-1 mb-2">🔐</div>
-                            <p class="mb-0">No HTTP method statistics available.</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
+                <div class="card-body p-0">
 
-    {{-- Targeted Routes --}}
-    <div class="card analytics-card mb-4">
-        <div class="card-header">
-            <h5 class="fw-bold mb-1">🎯 Most Targeted Routes</h5>
-            <small class="text-muted">Routes receiving the highest number of blocked requests</small>
-        </div>
-        <div class="card-body p-0">
-            @if($topTargetedRoutes->count())
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="px-4">#</th>
-                                <th>Route</th>
-                                <th class="text-end px-4">Blocked Attempts</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($topTargetedRoutes as $index => $route)
+                    @if(isset($topBlockedIps) && $topBlockedIps->count())
+
+                        <div class="table-responsive">
+
+                            <table class="table table-hover mb-0">
+
+                                <thead class="table-light">
+
                                 <tr>
-                                    <td class="px-4 fw-bold text-muted">{{ $index + 1 }}</td>
-                                    <td><span class="route-text">/{{ ltrim($route->path, '/') }}</span></td>
-                                    <td class="text-end px-4">
-                                        <span class="badge bg-danger">{{ number_format($route->attempts) }}</span>
-                                    </td>
+                                    <th>#</th>
+                                    <th>IP Address</th>
+                                    <th class="text-end">
+                                        Attempts
+                                    </th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+
+                                </thead>
+
+                                <tbody>
+
+                                @foreach($topBlockedIps as $index => $item)
+
+                                    <tr>
+
+                                        <td>
+                                            {{ $index + 1 }}
+                                        </td>
+
+                                        <td>
+
+                                            <span class="badge bg-danger badge-ip">
+                                                {{ $item->ip_address }}
+                                            </span>
+
+                                        </td>
+
+                                        <td class="text-end fw-bold">
+                                            {{ number_format($item->total) }}
+                                        </td>
+
+                                    </tr>
+
+                                @endforeach
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    @else
+                        <div class="empty-state">
+                            No blocked IP data available.
+                        </div>
+                    @endif
                 </div>
-            @else
-                <div class="empty-state">
-                    <div class="fs-1 mb-2">🎯</div>
-                    <p class="mb-0">No targeted route data available.</p>
+            </div>
+        </div>
+
+        {{-- HTTP METHODS --}}
+        <div class="col-lg-6">
+
+            <div class="card analytics-card h-100">
+                <div class="card-header">
+                    🌐 HTTP Methods
                 </div>
-            @endif
+
+                <div class="card-body p-0">
+
+                    @if(isset($methodStatistics) && $methodStatistics->count())
+
+                        <div class="table-responsive">
+
+                            <table class="table table-hover mb-0">
+
+                                <thead class="table-light">
+
+                                <tr>
+                                    <th>#</th>
+                                    <th>Method</th>
+                                    <th class="text-end">
+                                        Attempts
+                                    </th>
+                                </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                @foreach($methodStatistics as $index => $item)
+
+                                    @php
+                                        $method = strtoupper($item->method ?? '');
+
+                                        if ($method === 'GET') {
+                                            $methodClass = 'bg-primary';
+                                        } elseif ($method === 'POST') {
+                                            $methodClass = 'bg-success';
+                                        } elseif ($method === 'PUT') {
+                                            $methodClass = 'bg-warning text-dark';
+                                        } elseif ($method === 'PATCH') {
+                                            $methodClass = 'bg-info text-dark';
+                                        } elseif ($method === 'DELETE') {
+                                            $methodClass = 'bg-danger';
+                                        } else {
+                                            $methodClass = 'bg-secondary';
+                                        }
+                                    @endphp
+
+                                    <tr>
+
+                                        <td>
+                                            {{ $index + 1 }}
+                                        </td>
+
+                                        <td>
+
+                                            <span class="badge {{ $methodClass }}">
+                                                {{ $method }}
+                                            </span>
+
+                                        </td>
+
+                                        <td class="text-end fw-bold">
+                                            {{ number_format($item->total) }}
+                                        </td>
+
+                                    </tr>
+
+                                @endforeach
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    @else
+                        <div class="empty-state">
+                            No HTTP method data available.
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 
-    {{-- Recent Activity --}}
+
+    {{-- ========================================================= --}}
+    {{-- TARGETED ROUTES --}}
+    {{-- ========================================================= --}}
+
     <div class="card analytics-card mb-4">
         <div class="card-header">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                <div>
-                    <h5 class="fw-bold mb-1">🚨 Recent Security Activity</h5>
-                    <small class="text-muted">Latest blocked access attempts</small>
-                </div>
-                <a href="{{ route('ip-restrictions.index') }}" class="btn btn-sm btn-outline-light">View All Logs</a>
-            </div>
+            🎯 Most Targeted Routes
         </div>
         <div class="card-body p-0">
-            @if($recentActivity->count())
+
+            @if(isset($topTargetedRoutes) && $topTargetedRoutes->count())
+
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
-                            <tr>
-                                <th class="px-4">IP Address</th>
-                                <th>Country</th>
-                                <th>Method</th>
-                                <th>Path</th>
-                                <th>User Agent</th>
-                                <th class="text-end px-4">Blocked At</th>
-                            </tr>
+
+                        <tr>
+
+                            <th>#</th>
+
+                            <th>
+                                Route
+                            </th>
+
+                            <th>
+                                Attempts
+                            </th>
+
+                        </tr>
+
                         </thead>
                         <tbody>
-                            @foreach($recentActivity as $activity)
-                                <tr class="activity-row">
-                                    <td class="px-4">
-                                        <span class="badge bg-danger-subtle text-danger ip-badge">{{ $activity->ip_address }}</span>
-                                    </td>
-                                    <td>
-                                        @if($activity->country_code)
-                                        <span class="badge bg-info">{{ $activity->country_code }}</span>
-                                        @if($activity->city)
-                                        <small class="text-muted d-block">{{ $activity->city }}</small>
-                                        @endif
-                                        @else
-                                        <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td><span class="badge bg-dark">{{ $activity->method ?? 'N/A' }}</span></td>
-                                    <td><span class="route-text">/{{ ltrim($activity->path ?? '', '/') }}</span></td>
-                                    <td>
-                                        <span class="text-muted d-inline-block" style="max-width: 280px;" title="{{ $activity->user_agent }}">
-                                            {{ $activity->user_agent ? \Illuminate\Support\Str::limit($activity->user_agent, 45) : 'N/A' }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end px-4">
-                                        <span class="text-muted">{{ $activity->blocked_at?->format('d M Y, h:i A') ?? 'N/A' }}</span>
-                                    </td>
-                                </tr>
-                            @endforeach
+
+                        @foreach($topTargetedRoutes as $index => $item)
+
+                            <tr>
+
+                                <td>
+                                    {{ $index + 1 }}
+                                </td>
+
+                                <td>
+
+                                    <span class="route-text">
+                                        {{ $item->path }}
+                                    </span>
+
+                                </td>
+
+                                <td class="fw-bold">
+                                    {{ number_format($item->total) }}
+                                </td>
+
+                            </tr>
+
+                        @endforeach
+
                         </tbody>
                     </table>
                 </div>
             @else
                 <div class="empty-state">
-                    <div class="fs-1 mb-2">🛡️</div>
-                    <h6 class="fw-bold">No Security Activity</h6>
-                    <p class="mb-0">No blocked access attempts have been recorded yet.</p>
+                    No targeted route data available.
                 </div>
             @endif
         </div>
     </div>
 
-    {{-- Footer --}}
+
+    {{-- ========================================================= --}}
+    {{-- RECENT ACTIVITY --}}
+    {{-- ========================================================= --}}
+
+    <div class="card analytics-card mb-4">
+        <div class="card-header">
+            🕒 Recent Blocked Activity
+        </div>
+        <div class="card-body p-0">
+
+            @if(isset($recentActivity) && $recentActivity->count())
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                        <tr>
+
+                            <th>IP Address</th>
+
+                            <th>Method</th>
+
+                            <th>Path</th>
+
+                            <th>User Agent</th>
+
+                            <th>Blocked At</th>
+
+                        </tr>
+
+                        </thead>
+                        <tbody>
+
+                        @foreach($recentActivity as $activity)
+
+                            <tr>
+
+                                <td>
+
+                                    <span class="badge bg-danger badge-ip">
+                                        {{ $activity->ip_address }}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="badge bg-secondary">
+                                        {{ strtoupper($activity->method ?? 'N/A') }}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="route-text">
+                                        {{ $activity->path ?? 'N/A' }}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="user-agent">
+                                        {{ $activity->user_agent ?: 'N/A' }}
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+
+                                    @if($activity->blocked_at)
+
+                                        {{ $activity->blocked_at->format('d M Y, h:i A') }}
+
+                                    @else
+
+                                        N/A
+
+                                    @endif
+
+                                </td>
+
+                            </tr>
+
+                        @endforeach
+
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="empty-state">
+
+                    <h5>No Recent Activity</h5>
+
+                    <p class="mb-0">
+                        No blocked requests were found for the selected period.
+                    </p>
+
+                </div>
+            @endif
+        </div>
+    </div>
+
+
+    {{-- ========================================================= --}}
+    {{-- FOOTER --}}
+    {{-- ========================================================= --}}
+
     <div class="text-center text-muted py-3">
-        <small>IP Restriction Security Analytics &copy; {{ date('Y') }}</small>
+
+        Laravel 12 · IP Restriction Security Analytics
+
     </div>
 </div>
 
-<script>
-    const statistics = @json($sevenDayStatistics);
-    const labels = statistics.map(item => item.date);
-    const attempts = statistics.map(item => item.attempts);
-    const chartElement = document.getElementById('blockedAttemptsChart');
 
-    if (chartElement) {
-        new Chart(chartElement, {
+{{-- ============================================================= --}}
+{{-- PREPARE CHART DATA --}}
+{{-- ============================================================= --}}
+
+@php
+
+    $chartLabels = [];
+
+    $chartData = [];
+
+    foreach (($sevenDayStatistics ?? []) as $item) {
+
+        $dateValue = $item->date ?? null;
+
+        if ($dateValue) {
+            $chartLabels[] = \Carbon\Carbon::parse($dateValue)->format('d M');
+        } else {
+            $chartLabels[] = '';
+        }
+
+        $chartData[] = (int) ($item->total ?? 0);
+    }
+
+@endphp
+
+
+{{-- ============================================================= --}}
+{{-- CHART SCRIPT --}}
+{{-- ============================================================= --}}
+
+<script>
+
+    const chartLabels = @json($chartLabels);
+
+    const chartData = @json($chartData);
+
+    const chartCanvas = document.getElementById('sevenDayChart');
+
+    if (chartCanvas) {
+
+        new Chart(chartCanvas, {
+
             type: 'line',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Blocked Attempts',
-                    data: attempts,
-                    borderWidth: 3,
-                    tension: 0.35,
-                    fill: true,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                }]
+
+                labels: chartLabels,
+
+                datasets: [
+
+                    {
+                        label: 'Blocked Attempts',
+
+                        data: chartData,
+
+                        borderWidth: 2,
+
+                        tension: 0.3,
+
+                        fill: false,
+
+                        pointRadius: 4
+                    }
+
+                ]
             },
             options: {
+
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { display: true } },
+
+                plugins: {
+
+                    legend: {
+                        display: true
+                    }
+
+                },
+
                 scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 } }
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        ticks: {
+
+                            precision: 0
+
+                        }
+
+                    }
+
                 }
+
             }
+
         });
     }
+
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
+
 </html>
