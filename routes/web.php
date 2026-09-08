@@ -3,78 +3,42 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IpRestrictionController;
 
-/*
-|--------------------------------------------------------------------------
-| IP Restriction Management
-|--------------------------------------------------------------------------
-|
-| These routes allow you to manage blocked IP addresses,
-| activate/deactivate restrictions, and view blocked attempts.
-|
-*/
+Route::get('/ip-restrictions', [IpRestrictionController::class, 'index'])
+    ->name('ip-restrictions.index');
 
-Route::get('/ip-restrictions', [
-    IpRestrictionController::class,
-    'index'
-])->name('ip-restrictions.index');
+Route::get('/security-analytics', [IpRestrictionController::class, 'analytics'])
+    ->name('security-analytics.index');
 
-Route::get('/security-analytics', [
-    IpRestrictionController::class,
-    'analytics'
-])->name('security-analytics.index');
+Route::post('/ip-restrictions', [IpRestrictionController::class, 'store'])
+    ->name('ip-restrictions.store');
 
-Route::post('/ip-restrictions', [
-    IpRestrictionController::class,
-    'store'
-])->name('ip-restrictions.store');
+Route::post('/ip-restrictions/bulk-action', [IpRestrictionController::class, 'bulkAction'])
+    ->name('ip-restrictions.bulk-action');
 
-/*
-|--------------------------------------------------------------------------
-| Clear blocked IP logs
-|--------------------------------------------------------------------------
-*/
+Route::post('/ip-restrictions/import', [IpRestrictionController::class, 'import'])
+    ->name('ip-restrictions.import');
 
-Route::delete('/ip-restrictions/logs/clear', [
-    IpRestrictionController::class,
-    'clearLogs'
-])->name('ip-restrictions.logs.clear');
+Route::get('/ip-restrictions/export/{format}', [IpRestrictionController::class, 'export'])
+    ->where('format', 'csv|json')
+    ->name('ip-restrictions.export');
 
-/*
-|--------------------------------------------------------------------------
-| Activate / Deactivate IP restriction
-|--------------------------------------------------------------------------
-*/
+Route::get('/ip-restrictions/logs/export', [IpRestrictionController::class, 'exportLogs'])
+    ->name('ip-restrictions.logs.export');
 
-Route::patch('/ip-restrictions/{ipRestriction}/activate', [
-    IpRestrictionController::class,
-    'activate'
-])->name('ip-restrictions.activate');
+Route::delete('/ip-restrictions/logs/clear', [IpRestrictionController::class, 'clearLogs'])
+    ->name('ip-restrictions.logs.clear');
 
-Route::patch('/ip-restrictions/{ipRestriction}/deactivate', [
-    IpRestrictionController::class,
-    'deactivate'
-])->name('ip-restrictions.deactivate');
+Route::patch('/ip-restrictions/{ipRestriction}/activate', [IpRestrictionController::class, 'activate'])
+    ->name('ip-restrictions.activate');
 
-/*
-|--------------------------------------------------------------------------
-| Delete IP restriction
-|--------------------------------------------------------------------------
-*/
+Route::patch('/ip-restrictions/{ipRestriction}/deactivate', [IpRestrictionController::class, 'deactivate'])
+    ->name('ip-restrictions.deactivate');
 
-Route::delete('/ip-restrictions/{ipRestriction}', [
-    IpRestrictionController::class,
-    'destroy'
-])->name('ip-restrictions.destroy');
+Route::delete('/ip-restrictions/{ipRestriction}', [IpRestrictionController::class, 'destroy'])
+    ->name('ip-restrictions.destroy');
 
-
-/*
-|--------------------------------------------------------------------------
-| Test Route Protected By IP Middleware
-|--------------------------------------------------------------------------
-|
-| Use this route to test whether an IP address is blocked.
-|
-*/
+Route::get('/ip-restrictions/dark-mode/toggle', [IpRestrictionController::class, 'toggleDarkMode'])
+    ->name('ip-restrictions.dark-mode.toggle');
 
 Route::middleware(['blockIP'])->get('/protected', function () {
     return response()->json([
