@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,21 +12,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
 
-    /**
-     * Register application middlewares
-     */
     ->withMiddleware(function (Middleware $middleware): void {
-
-        // Register custom middleware alias
         $middleware->alias([
             'blockIP' => \App\Http\Middleware\BlockIpMiddleware::class,
         ]);
-
     })
 
-    /**
-     * Register exception handling
-     */
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('ip-restriction:cleanup-logs')
+            ->daily()
+            ->at('02:00');
+
+        $schedule->command('ip-restriction:notify-expiring')
+            ->daily()
+            ->at('09:00');
+    })
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })

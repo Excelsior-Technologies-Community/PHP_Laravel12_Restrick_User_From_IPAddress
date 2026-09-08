@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BlockedIpLog;
 use App\Models\IpRestriction;
+use App\Models\IpWhitelist;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -172,28 +173,133 @@ class IpRestrictionController extends Controller
             'ip_address' => [
                 'required',
                 'ip',
-                'unique:ip_restrictions,ip_address',
+                Rule::unique('ip_restrictions', 'ip_address'),
+                Rule::unique('ip_whitelists', 'ip_address'),
             ],
-
-            'reason' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'expires_at' => [
-                'nullable',
-                'date',
-                'after:now',
-            ],
+            'restriction_type' => ['required', 'in:single,cidr,country,whitelist'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'expires_at' => ['nullable', 'date', 'after:now'],
+            'cidr' => ['nullable', 'regex:/^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/'],
+            'country_code' => ['nullable', 'size:2'],
         ]);
 
-        IpRestriction::create([
+        $type = $validated['restriction_type'];
+
+        if ($type === 'whitelist') {
+            IpWhitelist::create([
+                'ip_address' => $validated['ip_address'],
+                'reason' => $validated['reason'] ?? null,
+            ]);
+
+            return redirect()
+                ->route('ip-restrictions.index')
+                ->with('success', 'IP address has been whitelisted successfully.');
+        }
+
+        $data = [
             'ip_address' => $validated['ip_address'],
             'reason' => $validated['reason'] ?? null,
             'expires_at' => $validated['expires_at'] ?? null,
             'is_active' => true,
+            'restriction_type' => $type,
+        ];
+
+        if ($type === 'cidr') {
+            $data['cidr'] = $validated['cidr'];
+        } elseif ($type === 'country') {
+            $data['country_code'] = strtoupper($validated['country_code']);
+        }
+
+        IpRestriction::create($data);
+
+        return redirect()
+            ->route('ip-restrictions.index')
+            ->with('success', 'IP restriction has been added successfully.');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'action' => ['required', 'in:activate,deactivate,delete'],
+            'ids' => ['required', 'array'],
+            'ids.*' => ['exists:ip_restrictions,id'],
         ]);
+
+        $ids = $request->input('ids', []);
+
+        switch ($request->input('action')) {
+            case 'activate':
+                IpRestriction::whereIn('id', $ids)->update(['is_active' => true]);
+                $message = count($ids) . ' restriction(s) activated successfully.';
+                break;
+            case 'deactivate':
+                IpRestriction::whereIn('id', $ids)->update(['is_active' => false]);
+                $message = count($ids) . ' restriction(s) deactivated successfully.';
+                break;
+            case 'delete':
+                IpRestriction::whereIn('id', $ids)->delete();
+                $message = count($ids) . ' restriction(s) deleted successfully.';
+                break;
+        }
+
+        return redirect()
+            ->route('ip-restrictions.index')
+            ->with('success', $message);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'import_file' => ['required', 'file', 'mimes:csv,txt'],
+            'restriction_type' => ['required', 'in:single,cidr,country'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'expires_at' => ['nullable', 'date', 'after:now'],
+            'cidr' => ['nullable', 'regex:/^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/'],
+            'country_code' => ['nullable', 'size:2'],
+        ]);
+
+        $file = fopen($request->file('import_file')->getRealPath(), 'r');
+        $header = fgetcsv($file);
+        $count = 0;
+
+        $type = $request->input('restriction_type');
+        $reason = $request->input('reason');
+        $expiresAt = $request->input('expires_at');
+        $cidr = $request->input('cidr');
+        $countryCode = $request->input('country_code');
+
+        while (($row = fgetcsv($file)) !== false) {
+            $ip = trim($row[0] ?? '');
+
+            if (!$ip || !filter_var($ip, FILTER_VALIDATE_IP)) {
+                continue;
+            }
+
+            if (IpRestriction::where('ip_address', $ip)->exists()
+                || IpWhitelist::where('ip_address', $ip)->exists()
+            ) {
+                continue;
+            }
+
+            $data = [
+                'ip_address' => $ip,
+                'reason' => $reason,
+                'expires_at' => $expiresAt,
+                'is_active' => true,
+                'restriction_type' => $type,
+            ];
+
+            if ($type === 'cidr') {
+                $data['cidr'] = $cidr;
+            } elseif ($type === 'country') {
+                $data['country_code'] = strtoupper($countryCode);
+            }
+
+            IpRestriction::create($data);
+            $count++;
+        }
+
+        fclose($file);
 
         return redirect()
             ->route('ip-restrictions.index')
@@ -225,9 +331,7 @@ class IpRestrictionController extends Controller
      */
     public function activate(IpRestriction $ipRestriction)
     {
-        $ipRestriction->update([
-            'is_active' => true,
-        ]);
+        $ipRestriction->update(['is_active' => true]);
 
         return redirect()
             ->route('ip-restrictions.index')
@@ -243,9 +347,7 @@ class IpRestrictionController extends Controller
      */
     public function deactivate(IpRestriction $ipRestriction)
     {
-        $ipRestriction->update([
-            'is_active' => false,
-        ]);
+        $ipRestriction->update(['is_active' => false]);
 
         return redirect()
             ->route('ip-restrictions.index')
@@ -472,7 +574,6 @@ class IpRestrictionController extends Controller
         */
 
         $sevenDayStatistics = [];
-
         for ($i = 6; $i >= 0; $i--) {
 
             $date = now()
